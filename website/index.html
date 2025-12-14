@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TouchDesigner Controller</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="status-indicator" id="status-indicator">
+                <div class="status-dot"></div>
+                <span id="status-text">Disconnected</span>
+            </div>
+            <h1>Live Controller</h1>
+        </header>
+
+        <main>
+            <div class="control-card">
+                <div class="control-header">
+                    <label for="slider-intensity">Intensity</label>
+                    <span class="value-display" id="value-display">0.00</span>
+                </div>
+                <div class="slider-container">
+                    <input type="range" id="slider-intensity" min="0" max="1" step="0.01" value="0">
+                    <div class="slider-fill" id="slider-fill"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powering your interactive experience</p>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

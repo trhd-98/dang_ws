@@ -30,11 +30,16 @@ async def send_messages(websocket):
         print("> ", end="", flush=True)
 
 async def main():
-    uri = "ws://localhost:8765"
+    # Connect to the deployed server
+    # Note: We added '/ws' to the path in the new server
+    uri = "wss://dang-ws.onrender.com/ws"
+    # Or for local testing: uri = "ws://localhost:8765/ws"
+    
     print(f"Connecting to {uri}...")
     
     try:
-        async with websockets.connect(uri) as websocket:
+        # Increase the timeout to 60 seconds to allow the free server to "wake up"
+        async with websockets.connect(uri, open_timeout=60) as websocket:
             print("Connected! Type a message and press Enter.")
             
             # Run both receive and send tasks concurrently

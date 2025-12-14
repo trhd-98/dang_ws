@@ -1,67 +1,53 @@
-import asyncio
-import websockets
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
+import uvicorn
+import os
 
-# Store all connected clients
+app = FastAPI()
+
+# Store connected clients
 connected_clients = set()
 
-async def handler(websocket):
-    """
-    Handles a connection from a client.
-    Register the client, and broadcast any received messages to all other clients.
-    """
-    # Register the new client
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
     connected_clients.add(websocket)
     print(f"Client connected. Total clients: {len(connected_clients)}")
     
     try:
-        async for message in websocket:
-            print(f"Received: {message}")
+        while True:
+            # Receive message
+            data = await websocket.receive_text()
+            print(f"Received: {data}")
             
-            # Broadcast the message to all connected clients
-            # We iterate over a copy of the set or just the set (since we only read it)
-            # but sending is async, so we just await each send.
+            # Broadcast to all connected clients
             for client in connected_clients:
                 try:
-                    await client.send(message)
-                except websockets.exceptions.ConnectionClosed:
-                    # If a client connection is dead, we'll ignore it here.
-                    # It will be removed from the set in its own handler instance.
+                    await client.send_text(data)
+                except Exception:
+                    # If sending fails, we assume they might be disconnected
+                    # The 'except WebSocketDisconnect' block handles the cleanup mostly
                     pass
-            
-            print(f"Broadcasted message to {len(connected_clients)} clients")
-            
-    except websockets.exceptions.ConnectionClosed as e:
-        print(f"Client disconnected: {e}")
+                    
+    except WebSocketDisconnect:
+        connected_clients.remove(websocket)
+        print(f"Client disconnected. Total clients: {len(connected_clients)}")
     except Exception as e:
         print(f"Error: {e}")
-    finally:
-        # Unregister the client when they disconnect
-        connected_clients.remove(websocket)
-        print(f"Client removed. Total clients: {len(connected_clients)}")
+        if websocket in connected_clients:
+            connected_clients.remove(websocket)
 
-import os
-
-async def main():
-    # Get the port from the environment variable (Render sets this automatically).
-    # If it's not set (like on your local computer), default to 8765.
-    port = int(os.environ.get("PORT", 8765))
-    
-    # "0.0.0.0" means "listen on all available addresses". 
-    # This is required for cloud hosting. Localhost only listens on your own machine.
-    host = "0.0.0.0"
-    
-    print(f"Server starting on ws://{host}:{port}")
-    print("Press Ctrl+C to stop the server")
-    
-    # Start the server
-    # ping_interval=None disables the automatic ping/pong to check connection health.
-    # This fixes the "keepalive ping timeout" error if the client (TouchDesigner)
-    # doesn't respond to pings in time.
-    async with websockets.serve(handler, host, port, ping_interval=None):
-        await asyncio.get_running_loop().create_future()  # Run forever
+# Serve the 'website' folder at the root URL ("/")
+# html=True allows serving 'index.html' automatically when visiting "/"
+# Check if directory exists to avoid errors locally if folder is missing
+if os.path.exists("website"):
+    app.mount("/", StaticFiles(directory="website", html=True), name="static")
+else:
+    print("Warning: 'website' folder not found. Only WebSocket /ws will work.")
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\nServer stopped by user.")
+    # Get port from environment variable (Render) or default to 8765 (Local)
+    port = int(os.environ.get("PORT", 8765))
+    
+    print(f"Server starting on http://0.0.0.0:{port}")
+    uvicorn.run(app, host="0.0.0.0", port=port)
