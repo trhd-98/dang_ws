@@ -3,7 +3,8 @@
     --card-bg: #18181b;
     --text-primary: #ffffff;
     --text-secondary: #a1a1aa;
-    --accent-color: #8b5cf6; /* Violet */
+    --accent-color: #8b5cf6;
+    /* Violet */
     --accent-glow: rgba(139, 92, 246, 0.3);
     --danger-color: #ef4444;
     --success-color: #22c55e;
@@ -24,7 +25,8 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    overflow: hidden; /* Prevent scrolling on mobile drag */
+    overflow: hidden;
+    /* Prevent scrolling on mobile drag */
 }
 
 .app-container {
@@ -105,7 +107,8 @@ label {
 }
 
 .value-display {
-    font-family: 'Inter', monospace; /* Monospace for stable numbers */
+    font-family: 'Inter', monospace;
+    /* Monospace for stable numbers */
     font-size: 1.25rem;
     font-weight: 600;
     color: var(--accent-color);
@@ -139,7 +142,8 @@ input[type="range"]::-webkit-slider-thumb {
     width: 24px;
     height: 24px;
     background: var(--text-primary);
-    border: 2px solid var(--card-bg); /* Gap effect */
+    border: 2px solid var(--card-bg);
+    /* Gap effect */
     border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 0 4px var(--accent-glow);
@@ -155,7 +159,7 @@ input[type="range"]:active::-webkit-slider-thumb {
    but basic linear-gradient trick works for webkit) 
 */
 input[type="range"]::-webkit-slider-runnable-track {
-    background: linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) var(--fill-percent, 0%), rgba(255,255,255,0.1) var(--fill-percent, 0%), rgba(255,255,255,0.1) 100%);
+    background: linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) var(--fill-percent, 0%), rgba(255, 255, 255, 0.1) var(--fill-percent, 0%), rgba(255, 255, 255, 0.1) 100%);
     border-radius: 3px;
     height: 6px;
 }

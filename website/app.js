@@ -5,10 +5,16 @@ const statusText = document.getElementById('status-text');
 
 // Configuration
 // Automatically determine the WebSocket URL based on the current page address
-// If we are on https://mysite.com, use wss://mysite.com/ws
-// If we are on http://localhost:8765, use ws://localhost:8765/ws
-const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const WS_URL = `${protocol}//${window.location.host}/ws`;
+let WS_URL;
+if (window.location.protocol === 'file:') {
+    // If opening file directly (double click), connect to the cloud server
+    // (Or change this to 'ws://localhost:8765/ws' if you want local testing)
+    WS_URL = 'wss://dang-ws.onrender.com/ws';
+} else {
+    // If hosted (on Render or Localhost server), use relative path
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    WS_URL = `${protocol}//${window.location.host}/ws`;
+}
 
 let socket;
 
@@ -36,17 +42,27 @@ function connect() {
     };
 
     socket.onmessage = (event) => {
-        // Optional: If we want the slider to update if OTHER people move it
-        // We can parse 'event.data' here. 
-        // For now, let's keep it simple (one-way control mostly)
         console.log("Received:", event.data);
+        try {
+            const data = JSON.parse(event.data);
+
+            // Checks if the incoming JSON has "slider1"
+            if (data.slider1 !== undefined) {
+                // Update the slider value and the UI
+                slider.value = data.slider1;
+                updateSliderUI(data.slider1);
+            }
+        } catch (e) {
+            // Ignore non-JSON messages or errors
+            console.log("Received non-JSON content or error parsing:", e);
+        }
     };
 }
 
 // Slider Logic
 function updateSliderUI(value) {
     // Update text
-    valueDisplay.textContent = parseFloat(value).toFixed(2);
+    valueDisplay.textContent = Math.round(value);
 
     // Update gradient fill (CSS variable)
     const percentage = (value - slider.min) / (slider.max - slider.min) * 100;
