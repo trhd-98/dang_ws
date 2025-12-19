@@ -31,8 +31,10 @@ function connect() {
         setTimeout(connect, 3000);
     };
     socket.onmessage = (event) => {
+        console.log("Raw Message Received:", event.data);
         try {
             const data = JSON.parse(event.data);
+            console.log("Parsed Data:", data);
 
             // Handle different message types
             if (data.type === 'schema_update') {
@@ -40,16 +42,29 @@ function connect() {
             } else if (data.type === 'parameter_update') {
                 handleExternalUpdate(data.id, data.values);
             } else {
-                // Backward compatibility or raw parameter updates
-                // assuming data is { param: value }
                 handleExternalUpdate(null, data);
             }
-        } catch (e) { }
+        } catch (e) {
+            console.error("Error parsing/handling message:", e, event.data);
+        }
     };
 }
 
 function handleSchemaUpdate(data) {
-    const { id, title, schema, state } = data;
+    let { id, title, schema, state } = data;
+
+    // Safety: Auto-parse strings if TD sent them as unparsed text
+    if (typeof schema === 'string') {
+        try { schema = JSON.parse(schema); } catch (e) { console.error("Failed to parse schema string"); }
+    }
+    if (typeof state === 'string') {
+        try { state = JSON.parse(state); } catch (e) { console.error("Failed to parse state string"); }
+    }
+
+    if (!schema || typeof schema !== 'object') {
+        console.error("Invalid schema received:", schema);
+        return;
+    }
 
     // Find existing schema or create new
     let s = schemas.find(x => x.id === id);
