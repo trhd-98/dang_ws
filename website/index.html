@@ -4,40 +4,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TouchDesigner Controller</title>
+    <title>TouchDesigner Master Control</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <div class="app-container">
-        <header>
-            <div class="status-indicator" id="status-indicator">
-                <div class="status-dot"></div>
-                <span id="status-text">Disconnected</span>
+    <div class="app-layout">
+        <header class="app-header">
+            <div class="logo">TD MASTER CONTROL</div>
+            <div class="status-pill">
+                <div class="dot"></div>
+                <span>LIVE</span>
             </div>
-            <h1>Live Controller</h1>
         </header>
 
-        <main>
-            <div class="control-card">
-                <div class="control-header">
-                    <label for="slider-intensity">Intensity</label>
-                    <span class="value-display" id="value-display">0.00</span>
-                </div>
-                <div class="slider-container">
-                    <input type="range" id="slider-intensity" min="1" max="1000" step="1" value="500">
-                    <div class="slider-fill" id="slider-fill"></div>
-                </div>
+        <div id="window-container" class="window-container">
+            <!-- Windows will be injected here -->
+            <div class="loading-state">
+                <p>Waiting for TouchDesigner schema...</p>
             </div>
-        </main>
-
-        <footer>
-            <p>Powering your interactive experience</p>
-        </footer>
+        </div>
     </div>
+
+    <!-- Scripts -->
     <script src="app.js"></script>
 </body>
 
