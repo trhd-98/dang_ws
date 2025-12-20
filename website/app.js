@@ -109,7 +109,7 @@ function handleExternalUpdate(targetId, updates) {
             if (input) {
                 if (input.type === 'checkbox') {
                     input.checked = updates[key];
-                } else if (document.activeElement !== input) {
+                } else if (document.activeElement !== input && !input.isInteracting) {
                     input.value = updates[key];
                 }
             }
@@ -492,6 +492,19 @@ function attachEvents(container, windowId, key, spec) {
     }
 
     const updateEvent = spec.style === 'Menu' || spec.style === 'Toggle' || spec.style === 'Str' ? 'change' : 'input';
+
+    // Track interaction to prevent jitter from external updates
+    if (input.type === 'range') {
+        const startInt = () => input.isInteracting = true;
+        const endInt = () => input.isInteracting = false;
+        input.addEventListener('mousedown', startInt);
+        input.addEventListener('touchstart', startInt, { passive: true });
+        input.addEventListener('mouseup', endInt);
+        input.addEventListener('mouseleave', endInt);
+        input.addEventListener('touchend', endInt);
+        input.addEventListener('touchcancel', endInt);
+    }
+
     input.addEventListener(updateEvent, (e) => {
         let value = input.type === 'checkbox' ? input.checked : e.target.value;
         if (spec.style === 'Int') value = parseInt(value);
