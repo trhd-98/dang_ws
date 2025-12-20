@@ -7,6 +7,10 @@ def onValuesChanged(changes):
 	if not changes:
 		return
 		
+	# Check if Active is ON
+	if not parent().par.Active.eval():
+		return
+
 	# Group changes for efficiency
 	updates = {}
 	op_id = None

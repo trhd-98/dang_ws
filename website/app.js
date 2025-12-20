@@ -3,14 +3,10 @@
  * Generates UI based on schema.json and state.json
  */
 
-let schemas = []; // Array of { id, title, schema, state, currentTab }
+const schemas = []; // Array of { id, title, schema, state, currentTab }
 let socket = null;
 
 const windowContainer = document.getElementById('window-container');
-const textportLog = document.getElementById('textport-log');
-const textportInput = document.getElementById('textport-input');
-const textportContainer = document.getElementById('textport-container');
-
 const WS_URL = 'wss://dang-ws.onrender.com/ws';
 
 function connect() {
@@ -28,21 +24,49 @@ function connect() {
         try {
             const data = JSON.parse(event.data);
             if (data.type === 'schema_update') {
-                logTextport(`Schema loaded: ${data.title}`, 'system');
                 handleSchemaUpdate(data);
             } else if (data.type === 'parameter_update') {
                 handleExternalUpdate(data.id, data.values);
-            } else if (data.type === 'response') {
-                logTextport(data.message, 'response');
-            } else if (data.type === 'error') {
-                logTextport(data.message, 'error');
+            } else if (data.type === 'remove_window') {
+                handleWindowRemoval(data.id);
+            } else if (data.type === 'ping') {
+                return; // Ignore heartbeats
             } else {
                 handleExternalUpdate(null, data);
             }
         } catch (e) {
-            logTextport(event.data, 'system');
+            console.error(e);
         }
     };
+}
+
+// Toast Notification System
+function showToast(title, message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    const icons = {
+        success: '✓',
+        info: 'ℹ',
+        warning: '⚠'
+    };
+
+    toast.innerHTML = `
+        <div class="toast-icon">${icons[type] || icons.info}</div>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 function handleSchemaUpdate(data) {
@@ -50,74 +74,79 @@ function handleSchemaUpdate(data) {
     if (typeof schema === 'string') schema = JSON.parse(schema);
     if (typeof state === 'string') state = JSON.parse(state);
 
-    // Replace the entire schemas array with just this new one to only show the latest connection
-    schemas = [{
-        id,
-        title,
-        schema,
-        state,
-        currentTab: Object.keys(schema)[0]
-    }];
+    // Dynamic Multi-COMP Support: Upsert based on ID
+    let s = schemas.find(x => x.id === id);
+    const isNew = !s;
 
+    if (!s) {
+        s = { id, title, schema, state, currentTab: Object.keys(schema)[0] };
+        schemas.push(s);
+        showToast('Operation Linked', `${title} is now connected`, 'success');
+    } else {
+        s.title = title;
+        s.schema = schema;
+        s.state = state;
+        showToast('Operation Updated', `${title} parameters refreshed`, 'info');
+    }
     renderWindows();
 }
 
-function handleExternalUpdate(windowId, values) {
-    for (const [key, value] of Object.entries(values)) {
-        const selector = windowId ? `[id="input-${windowId}-${key}"]` : `[id$="-${key}"]`;
-        const inputs = document.querySelectorAll(selector);
-        inputs.forEach(input => {
-            if (input.type === 'checkbox') {
-                input.checked = !!value;
+function handleExternalUpdate(targetId, updates) {
+    const targets = targetId ? schemas.filter(s => s.id === targetId) : schemas;
+
+    targets.forEach(s => {
+        Object.keys(updates).forEach(key => {
+            if (s.state[key]) {
+                s.state[key][0] = updates[key];
             } else {
-                input.value = value;
+                s.state[key] = [updates[key]];
             }
-            const wId = input.dataset.windowId;
-            const display = document.getElementById(`value-${wId}-${key}`);
-            if (display) {
-                display.textContent = (typeof value === 'number' && !Number.isInteger(value)) ? value.toFixed(3) : value;
-            }
-        });
-    }
-}
 
-function sendUpdate(param, value) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ [param]: value }));
-    }
-}
+            const windowId = s.id;
+            const input = document.getElementById(`input-${windowId}-${key}`);
+            const display = document.getElementById(`value-${windowId}-${key}`);
 
-async function init() {
-    renderWindows();
-    setupTextport();
-    connect();
-}
-
-function setupTextport() {
-    if (textportInput) {
-        textportInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const cmd = textportInput.value.trim();
-                if (cmd) {
-                    logTextport(cmd, 'command');
-                    socket.send(JSON.stringify({ type: 'command', command: cmd }));
-                    textportInput.value = '';
+            if (input) {
+                if (input.type === 'checkbox') {
+                    input.checked = updates[key];
+                } else if (document.activeElement !== input) {
+                    input.value = updates[key];
                 }
             }
-        });
-    }
 
-    const toggleBtn = document.getElementById('toggle-textport');
-    if (toggleBtn) {
-        toggleBtn.onclick = () => {
-            textportContainer.classList.toggle('minimized');
-            // Using SVG or icons is better, but let's keep it simple for now
-            toggleBtn.innerHTML = textportContainer.classList.contains('minimized') ?
-                `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>` :
-                `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 20h16"/></svg>`;
-        };
+            if (display) {
+                const val = updates[key];
+                display.textContent = (typeof val === 'number' && !Number.isInteger(val)) ? val.toFixed(3) : val;
+            }
+        });
+    });
+}
+
+function handleWindowRemoval(id) {
+    const win = document.getElementById(`window-${id}`);
+    if (win) {
+        const schema = schemas.find(s => s.id === id);
+        const title = schema ? schema.title : 'Operation';
+
+        win.remove();
+        const index = schemas.findIndex(s => s.id === id);
+        if (index > -1) schemas.splice(index, 1);
+
+        showToast('Operation Unlinked', `${title} has been disconnected`, 'warning');
     }
 }
+
+function sendUpdate(windowId, param, value) {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: 'parameter_update',
+            id: windowId,
+            [param]: value
+        }));
+    }
+}
+
+
 
 function renderWindows() {
     windowContainer.innerHTML = '';
@@ -362,7 +391,7 @@ function renderColorControl(container, windowId, key, spec, state) {
             colorValDisplay.textContent = newHex.toUpperCase();
 
             slider.parentElement.querySelector('.mini-val').textContent = parseFloat(slider.value).toFixed(2);
-            sendUpdate(`${key}${slider.dataset.suffix}`, parseFloat(slider.value));
+            sendUpdate(windowId, `${key}${slider.dataset.suffix}`, parseFloat(slider.value));
         });
     });
 }
@@ -428,7 +457,7 @@ function attachEvents(container, windowId, key, spec) {
     if (!input) return;
 
     if (spec.style === 'Pulse') {
-        const sendPulse = (val) => sendUpdate(key, val);
+        const sendPulse = (val) => sendUpdate(windowId, key, val);
 
         const press = (e) => {
             if (e.type === 'touchstart') e.preventDefault();
@@ -468,7 +497,7 @@ function attachEvents(container, windowId, key, spec) {
         if (spec.style === 'Int') value = parseInt(value);
         if (spec.style === 'Float') value = parseFloat(value);
         if (display) display.textContent = typeof value === 'number' ? (spec.style === 'Int' ? value : value.toFixed(3)) : value;
-        sendUpdate(key, value);
+        sendUpdate(windowId, key, value);
     });
 }
 
@@ -477,7 +506,7 @@ function updateParam(windowId, subKey, value) {
     const display = document.getElementById(`value-${windowId}-${subKey}`);
     if (input) input.value = value;
     if (display) display.textContent = typeof value === 'number' ? value.toFixed(3) : value;
-    sendUpdate(subKey, value);
+    sendUpdate(windowId, subKey, value);
 }
 
 function findSpecByKey(schema, key) {
@@ -525,18 +554,10 @@ function getSuffixes(spec) {
     return Array.from({ length: spec.size }, (_, i) => i);
 }
 
-function logTextport(msg, type = 'response') {
-    if (!textportLog) return;
-    const entry = document.createElement('div');
-    entry.className = `textport-entry ${type}`;
-    const now = new Date();
-    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-    entry.innerHTML = `<span class="timestamp">[${time}]</span><span class="message">${msg}</span>`;
-    textportLog.appendChild(entry);
-    textportLog.scrollTop = textportLog.scrollHeight;
+async function init() {
+    renderWindows();
+    connect();
 }
-
-window.clearTextport = function () { if (textportLog) textportLog.innerHTML = ''; }
 
 async function exportSchema(id) {
     const s = schemas.find(x => x.id === id);
@@ -548,7 +569,6 @@ async function exportSchema(id) {
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
-    logTextport(`Exported schema for ${s.title}`, 'system');
 }
 
 init();

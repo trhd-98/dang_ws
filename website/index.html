@@ -30,32 +30,11 @@
                     <p>Waiting for TouchDesigner schema...</p>
                 </div>
             </div>
-
-            <div class="textport-container" id="textport-container">
-                <div class="textport-header">
-                    <div class="textport-tabs">
-                        <span class="textport-tab active">TEXTPORT</span>
-                    </div>
-                    <div class="textport-actions">
-                        <button class="textport-btn" onclick="clearTextport()">Clear</button>
-                        <button class="textport-btn" id="toggle-textport" title="Minimize/Maximize">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div id="textport-content" class="textport-content">
-                    <div id="textport-log" class="textport-log"></div>
-                    <div class="textport-input-line">
-                        <span class="prompt">&gt;</span>
-                        <input type="text" id="textport-input" placeholder="Enter command..." autocomplete="off">
-                    </div>
-                </div>
-            </div>
         </main>
     </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
 
     <!-- Scripts -->
     <script src="app.js"></script>
