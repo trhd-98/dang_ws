@@ -50,15 +50,15 @@ function handleSchemaUpdate(data) {
     if (typeof schema === 'string') schema = JSON.parse(schema);
     if (typeof state === 'string') state = JSON.parse(state);
 
-    let s = schemas.find(x => x.id === id);
-    if (!s) {
-        s = { id, title, schema, state, currentTab: Object.keys(schema)[0] };
-        schemas.push(s);
-    } else {
-        s.title = title;
-        s.schema = schema;
-        s.state = state;
-    }
+    // Replace the entire schemas array with just this new one to only show the latest connection
+    schemas = [{
+        id,
+        title,
+        schema,
+        state,
+        currentTab: Object.keys(schema)[0]
+    }];
+
     renderWindows();
 }
 

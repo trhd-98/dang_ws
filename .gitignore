@@ -4,3 +4,9 @@ __pycache__/
 .vscode/
 .idea/
 .DS_Store
+
+# TouchDesigner
+*.toe
+*.lock
+CrashAutoSave.*
+*.zbk
